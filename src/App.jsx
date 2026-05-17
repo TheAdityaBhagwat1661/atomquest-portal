@@ -518,7 +518,7 @@ function App() {
   );
 }
 
-export default App;   />
+export default App;   
 
       <button
         onClick={handleSubmit}
