@@ -1,27 +1,20 @@
-import {
-  useState
-} from "react";
+import { useState, useEffect } from "react";
 
 function App() {
 
-  const [title,
-    setTitle] = useState("");
-  const [target,
-    setTarget] = useState("");
-  const [weightage,
-    setWeightage] = useState("");
+  const [title, setTitle] = useState("");
+  const [target, setTarget] = useState("");
+  const [weightage, setWeightage] = useState("");
 
-  const [goals,
-    setGoals] = useState([]);
+  const [goals, setGoals] = useState([]);
 
-  const [role,
-    setRole] = useState("employee");
+  const [role, setRole] = useState("employee");
 
-  const [search,
-    setSearch] = useState("");
+  const [search, setSearch] = useState("");
 
-  const [darkMode,
-    setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(true);
+
+  const [comments, setComments] = useState({});
 
   const quotes = [
     "Small progress every day leads to big achievements.",
@@ -30,8 +23,23 @@ function App() {
     "High-performing teams track what truly matters."
   ];
 
-  const [quoteIndex,
-    setQuoteIndex] = useState(0);
+  const [quoteIndex, setQuoteIndex] = useState(0);
+
+  // LOCAL STORAGE
+
+  useEffect(() => {
+    const savedGoals = localStorage.getItem("goals");
+
+    if (savedGoals) {
+      setGoals(JSON.parse(savedGoals));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("goals", JSON.stringify(goals));
+  }, [goals]);
+
+  // CREATE GOAL
 
   const handleSubmit = () => {
 
@@ -41,34 +49,33 @@ function App() {
     }
 
     if (Number(weightage) < 10) {
-      alert("Minimum weightage must be 10%.");
+      alert("Minimum weightage must be 10%");
       return;
     }
 
     if (goals.length >= 8) {
-      alert("Maximum 8 goals allowed.");
+      alert("Maximum 8 goals allowed");
       return;
     }
 
     const totalWeightage =
-    goals.reduce(
-      (sum, goal) =>
-      sum + Number(goal.weightage),
-      0
-    ) + Number(weightage);
+      goals.reduce(
+        (sum, goal) => sum + Number(goal.weightage),
+        0
+      ) + Number(weightage);
 
     if (totalWeightage > 100) {
-      alert("Total weightage cannot exceed 100%.");
+      alert("Total weightage cannot exceed 100%");
       return;
     }
 
     const newGoal = {
+      id: Date.now(),
       title,
       target,
       weightage,
       status: "Pending Approval",
-      createdAt: new Date().toLocaleDateString(),
-      id: Date.now()
+      createdAt: new Date().toLocaleDateString()
     };
 
     setGoals([...goals, newGoal]);
@@ -82,27 +89,55 @@ function App() {
     );
   };
 
-  const approveGoal = (id) => {
+  // MANAGER ACTION
+
+  const managerAction = (id, action) => {
 
     const updatedGoals = goals.map((goal) =>
-
       goal.id === id
-      ? {
-        ...goal, status: "Approved"
-      }: goal
-
+        ? { ...goal, status: action }
+        : goal
     );
 
     setGoals(updatedGoals);
   };
 
+  // DELETE
+
   const deleteGoal = (id) => {
 
     const updatedGoals =
-    goals.filter((goal) => goal.id !== id);
+      goals.filter((goal) => goal.id !== id);
 
     setGoals(updatedGoals);
   };
+
+  // EXPORT CSV
+
+  const exportCSV = () => {
+
+    const csv =
+      "Title,Target,Weightage,Status\n" +
+      goals.map(
+        (g) =>
+          `${g.title},${g.target},${g.weightage},${g.status}`
+      ).join("\n");
+
+    const blob = new Blob([csv], {
+      type: "text/csv"
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = "goals.csv";
+
+    a.click();
+  };
+
+  // STATS
 
   const completedGoals = goals.filter(
     (goal) => goal.status === "Completed"
@@ -117,176 +152,75 @@ function App() {
   ).length;
 
   const completionRate =
-  goals.length === 0
-  ? 0: Math.round(
-    (completedGoals / goals.length) * 100
-  );
+    goals.length === 0
+      ? 0
+      : Math.round(
+          (completedGoals / goals.length) * 100
+        );
 
   return (
 
-    <div style={ {
-      minHeight: "100vh",
-      padding: "18px",
-      fontFamily: "Arial",
-      color: darkMode ? "white": "#0F172A",
-      background:
-      darkMode
-      ? "linear-gradient(135deg,#020617,#0F172A,#1E1B4B,#312E81)": "linear-gradient(135deg,#DBEAFE,#E0E7FF,#F8FAFC)",
-      transition: "0.4s"
-    }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        padding: "20px",
+        fontFamily: "Arial",
+        background: darkMode
+          ? "#0F172A"
+          : "#F8FAFC",
+        color: darkMode
+          ? "white"
+          : "black"
+      }}
+    >
 
       {/* HEADER */}
 
-      <div style={ {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        flexWrap: "wrap",
-        gap: "12px"
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}
+      >
 
         <div>
 
-          <h1 style={ {
-            fontSize: "48px",
-            margin: "0",
-            lineHeight: "1.2",
-            fontWeight: "900",
-            color: "#FACC15",
-            letterSpacing: "1px",
-            textShadow:
-            "0 0 15px rgba(250,204,21,0.45)"
-          }}>
+          <h1 style={{ color: "#FACC15" }}>
             AtomQuest Portal
           </h1>
 
-          <p style={ {
-            marginTop: "8px",
-            color: darkMode ? "#CBD5E1": "#334155",
-            fontSize: "16px",
-            fontWeight: "500"
-          }}>
-            Smart Goal Setting & Performance Tracking System
+          <p>
+            Goal Setting & Performance Tracking
           </p>
 
         </div>
 
         <button
           onClick={() => setDarkMode(!darkMode)}
-          style={ {
-            border: "none",
-            padding: "12px 18px",
-            borderRadius: "14px",
-            background:
-            "linear-gradient(to right,#2563EB,#7C3AED)",
-            color: "white",
-            fontWeight: "bold",
-            cursor: "pointer"
-          }}
-          >
-          {darkMode ? "☀ Light": "🌙 Dark"}
+        >
+          {darkMode ? "☀ Light" : "🌙 Dark"}
         </button>
-
-      </div>
-
-      {/* HERO */}
-
-      <div style={ {
-        marginTop: "30px",
-        background:
-        darkMode
-        ? "rgba(255,255,255,0.06)": "rgba(255,255,255,0.9)",
-        padding: "24px",
-        borderRadius: "28px",
-        backdropFilter: "blur(14px)",
-        border: darkMode
-        ? "1px solid rgba(255,255,255,0.08)": "1px solid rgba(0,0,0,0.08)",
-        boxShadow:
-        "0 8px 30px rgba(0,0,0,0.08)"
-      }}>
-
-        <h2 style={ {
-          marginTop: "0",
-          fontSize: "30px",
-          color: darkMode ? "white": "#111827",
-          fontWeight: "800"
-        }}>
-          🚀 Track. Achieve. Grow.
-        </h2>
-
-        <p style={ {
-          color: darkMode ? "#CBD5E1": "#334155",
-          lineHeight: "1.8",
-          fontSize: "15px",
-          fontWeight: "500"
-        }}>
-          AtomQuest helps teams create meaningful goals,
-          track quarterly progress, improve accountability,
-          and build a transparent performance culture.
-        </p>
-
-        <div style={ {
-          marginTop: "18px",
-          background:
-          darkMode
-          ? "rgba(15,23,42,0.7)": "#F8FAFC",
-          padding: "16px",
-          borderRadius: "18px",
-          border: "1px solid rgba(0,0,0,0.08)"
-        }}>
-
-          <p style={ {
-            margin: "0",
-            color: darkMode ? "#FACC15": "#B45309",
-            fontStyle: "italic",
-            fontWeight: "600"
-          }}>
-            💡 {quotes[quoteIndex]}
-          </p>
-
-        </div>
 
       </div>
 
       {/* ROLE BUTTONS */}
 
-      <div style={ {
-        display: "flex",
-        gap: "12px",
-        flexWrap: "wrap",
-        marginTop: "30px"
-      }}>
+      <div
+        style={{
+          marginTop: "20px",
+          display: "flex",
+          gap: "10px"
+        }}
+      >
 
-        {["employee", "manager", "admin"].map((r, index)=>(
+        {["employee", "manager", "admin"].map((r) => (
 
           <button
-            key={index}
+            key={r}
             onClick={() => setRole(r)}
-            style={ {
-              background:
-              role === r
-              ? r === "employee"
-              ? "linear-gradient(to right,#2563EB,#3B82F6)": r === "manager"
-              ? "linear-gradient(to right,#059669,#10B981)": "linear-gradient(to right,#7C3AED,#A855F7)": darkMode
-              ? "#1E293B": "#E2E8F0",
-
-              color:
-              role === r
-              ? "white": darkMode
-              ? "white": "#0F172A",
-
-              border: "none",
-              padding: "13px 20px",
-              borderRadius: "16px",
-              fontWeight: "bold",
-              cursor: "pointer"
-            }}
-            >
-
-            {r === "employee" && "👨‍💼 Employee"}
-            {r === "manager" && "🧑‍💻 Manager"}
-            {r === "admin" && "👑 Admin"}
-
+          >
+            {r}
           </button>
 
         ))}
@@ -295,132 +229,296 @@ function App() {
 
       {/* DASHBOARD */}
 
-      <div style={ {
-        display: "grid",
-        gridTemplateColumns:
-        "repeat(auto-fit,minmax(160px,1fr))",
-        gap: "16px",
-        marginTop: "30px"
-      }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          marginTop: "20px",
+          flexWrap: "wrap"
+        }}
+      >
 
-        {[
-          ["📌 Total Goals", goals.length],
-          ["✅ Completed", completedGoals],
-          ["📈 On Track", onTrackGoals],
-          ["⏳ Pending", pendingGoals],
-          ["🎯 Success Rate", completionRate + "%"]
-        ].map((item, index) => (
-
-            <div
-              key={index}
-              style={ {
-                background:
-                darkMode
-                ? "rgba(30,41,59,0.75)": "rgba(255,255,255,0.95)",
-                padding: "22px",
-                borderRadius: "22px",
-                boxShadow:
-                "0 8px 25px rgba(0,0,0,0.08)"
-              }}
-              >
-
-              <h3 style={ {
-                color: darkMode ? "white": "#111827"
-              }}>
-                {item[0]}
-              </h3>
-
-              <p style={ {
-                fontSize: "34px",
-                fontWeight: "bold",
-                color: "#FACC15"
-              }}>
-                {item[1]}
-              </p>
-
-            </div>
-
-          ))}
+        <div>📌 Total: {goals.length}</div>
+        <div>✅ Completed: {completedGoals}</div>
+        <div>📈 On Track: {onTrackGoals}</div>
+        <div>⏳ Pending: {pendingGoals}</div>
+        <div>🎯 Success: {completionRate}%</div>
 
       </div>
 
-      {/* FORM */}
+      {/* EMPLOYEE FORM */}
 
-      <div style={ {
-        marginTop: "32px",
-        background:
-        darkMode
-        ? "rgba(15,23,42,0.72)": "rgba(255,255,255,0.95)",
-        padding: "26px",
-        borderRadius: "28px",
-        boxShadow:
-        "0 8px 25px rgba(0,0,0,0.08)"
-      }}>
+      {role === "employee" && (
 
-        <h2 style={ {
-          color: darkMode ? "white": "#111827"
-        }}>
-
-          {role === "employee" && "📝 Employee Dashboard"}
-          {role === "manager" && "📊 Manager Dashboard"}
-          {role === "admin" && "⚙ Admin Dashboard"}
-
-        </h2>
-
-        {role === "employee" && (
-
-          <>
-
-            <input
-            type="text"
-            placeholder="Goal title"
-            value={title}
-            onChange={(e)=>setTitle(e.target.value)}
-            style={ {
-              width: "100%",
-              padding: "16px",
-              marginTop: "16px",
-              borderRadius: "16px",
-              border: "1px solid #CBD5E1",
-              backgroundColor: darkMode ? "#0F172A": "#F8FAFC",
-              color: darkMode ? "white": "#0F172A",
-              boxSizing: "border-box"
-            }}
-            />
+        <div style={{ marginTop: "30px" }}>
 
           <input
-          type="number"
-          placeholder="Target value"
-          value={target}
-          onChange={(e)=>setTarget(e.target.value)}
-          style={ {
-            width: "100%",
-            padding: "16px",
-            marginTop: "16px",
-            borderRadius: "16px",
-            border: "1px solid #CBD5E1",
-            backgroundColor: darkMode ? "#0F172A": "#F8FAFC",
-            color: darkMode ? "white": "#0F172A",
-            boxSizing: "border-box"
-          }}
+            type="text"
+            placeholder="Goal Title"
+            value={title}
+            onChange={(e) =>
+              setTitle(e.target.value)
+            }
           />
 
+          <br /><br />
+
+          <input
+            type="number"
+            placeholder="Target"
+            value={target}
+            onChange={(e) =>
+              setTarget(e.target.value)
+            }
+          />
+
+          <br /><br />
+
+          <input
+            type="number"
+            placeholder="Weightage"
+            value={weightage}
+            onChange={(e) =>
+              setWeightage(e.target.value)
+            }
+          />
+
+          <br /><br />
+
+          <button onClick={handleSubmit}>
+            Create Goal
+          </button>
+
+        </div>
+
+      )}
+
+      {/* ADMIN */}
+
+      {role === "admin" && (
+
+        <div style={{ marginTop: "20px" }}>
+
+          <button
+            onClick={() => setGoals([])}
+          >
+            🗑 Clear All Goals
+          </button>
+
+        </div>
+
+      )}
+
+      {/* EXPORT */}
+
+      <div style={{ marginTop: "20px" }}>
+
+        <button onClick={exportCSV}>
+          📁 Export CSV
+        </button>
+
+      </div>
+
+      {/* SEARCH */}
+
+      <div style={{ marginTop: "20px" }}>
+
         <input
-        type="number"
-        placeholder="Weightage %"
-        value={weightage}
-        onChange={(e)=>setWeightage(e.target.value)}
-        style={ {
-          width: "100%",
-          padding: "16px",
-          marginTop: "16px",
-          borderRadius: "16px",
-          border: "1px solid #CBD5E1",
-          backgroundColor: darkMode ? "#0F172A": "#F8FAFC",
-          color: darkMode ? "white": "#0F172A",
-          boxSizing: "border-box"
-        }}
+          type="text"
+          placeholder="Search goals..."
+          value={search}
+          onChange={(e) =>
+            setSearch(e.target.value)
+          }
         />
+
+      </div>
+
+      {/* GOALS */}
+
+      <div style={{ marginTop: "30px" }}>
+
+        {goals
+          .filter((goal) =>
+            goal.title
+              .toLowerCase()
+              .includes(search.toLowerCase())
+          )
+          .map((goal) => {
+
+            const progress =
+              goal.status === "Completed"
+                ? 100
+                : goal.status === "On Track"
+                ? 60
+                : goal.status === "Approved"
+                ? 30
+                : 0;
+
+            return (
+
+              <div
+                key={goal.id}
+                style={{
+                  border: "1px solid gray",
+                  padding: "20px",
+                  marginTop: "20px",
+                  borderRadius: "10px"
+                }}
+              >
+
+                <h3>{goal.title}</h3>
+
+                <p>📌 Target: {goal.target}</p>
+
+                <p>
+                  ⚖ Weightage:
+                  {goal.weightage}%
+                </p>
+
+                <p>
+                  🚀 Status:
+                  {goal.status}
+                </p>
+
+                <p>
+                  📅 Created:
+                  {goal.createdAt}
+                </p>
+
+                {/* PROGRESS BAR */}
+
+                <div
+                  style={{
+                    background: "#CBD5E1",
+                    height: "10px",
+                    borderRadius: "10px"
+                  }}
+                >
+
+                  <div
+                    style={{
+                      width: progress + "%",
+                      background: "#FACC15",
+                      height: "10px",
+                      borderRadius: "10px"
+                    }}
+                  ></div>
+
+                </div>
+
+                {/* STATUS CHANGE */}
+
+                <select
+                  value={goal.status}
+                  onChange={(e) =>
+                    managerAction(
+                      goal.id,
+                      e.target.value
+                    )
+                  }
+                  style={{
+                    marginTop: "10px"
+                  }}
+                >
+
+                  <option>
+                    Pending Approval
+                  </option>
+
+                  <option>
+                    Approved
+                  </option>
+
+                  <option>
+                    Not Started
+                  </option>
+
+                  <option>
+                    On Track
+                  </option>
+
+                  <option>
+                    Completed
+                  </option>
+
+                </select>
+
+                {/* MANAGER */}
+
+                {role === "manager" && (
+
+                  <div
+                    style={{
+                      marginTop: "15px"
+                    }}
+                  >
+
+                    <input
+                      type="text"
+                      placeholder="Manager Comment"
+                      onChange={(e) =>
+                        setComments({
+                          ...comments,
+                          [goal.id]:
+                            e.target.value
+                        })
+                      }
+                    />
+
+                    <p>
+                      💬 {
+                        comments[goal.id]
+                      }
+                    </p>
+
+                  </div>
+
+                )}
+
+                {/* BUTTONS */}
+
+                <div
+                  style={{
+                    marginTop: "15px",
+                    display: "flex",
+                    gap: "10px"
+                  }}
+                >
+
+                  <button
+                    onClick={() =>
+                      managerAction(
+                        goal.id,
+                        "Approved"
+                      )
+                    }
+                  >
+                    ✅ Approve
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      deleteGoal(goal.id)
+                    }
+                  >
+                    🗑 Delete
+                  </button>
+
+                </div>
+
+              </div>
+
+            );
+          })}
+
+      </div>
+
+    </div>
+  );
+}
+
+export default App;   />
 
       <button
         onClick={handleSubmit}
